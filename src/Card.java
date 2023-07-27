@@ -1,9 +1,9 @@
 public class Card {
 
-    public String name;
+    private String name;
     private char type;
     // t r b l
-    public boolean[] direction;
+    private boolean[] direction;
 
 
     public Card(String name, boolean up, boolean left, boolean right, char t) {
@@ -11,6 +11,7 @@ public class Card {
         this.direction = new boolean[]{up, right, true, left};
         this.type = t;
     }
+
 
 
 
@@ -67,6 +68,8 @@ public class Card {
     public char getType(){
         return type;
     }
+
+    public String getName() { return name;}
 
 }
 
