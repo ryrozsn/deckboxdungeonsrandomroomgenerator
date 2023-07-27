@@ -14,6 +14,7 @@ public class Main {
     public static void main(String[] args) {
         Scanner consoleInput = new Scanner(System.in);
 
+        // Get Which Mode
         System.out.print("Max tiles (-1 if no limit)? ");
         tileLimit = consoleInput.nextInt();
         System.out.println("What game mode?");
@@ -27,112 +28,49 @@ public class Main {
             isTileLimit = false;
         }
 
+        // Generate Map
+        CardDisplay[][] tileMap = generateRandomDungeon(isTileLimit, 10);
 
+        // Display Dungeon
+        if (gameMode == 1 || gameMode == 3) {
+            display2dArray(tileMap);
+        }
 
+        // Traverse Dungeon
+        if (gameMode == 2 || gameMode == 3) {
+            exploreMap(tileMap, consoleInput, lastCardAdded);
+        }
+    }
+
+    /**
+     * A helper method to main that creates the random dungeon
+     * @param isTileLimit - holds whether there is a tile limit to the dungeon (do you cap the amount of tiles to use?)
+     * @return a 2D CardDisplay array containing the dungeon
+     */
+    private static CardDisplay[][] generateRandomDungeon(boolean isTileLimit, int size) {
         usableCards = new ArrayList<>();
         allCards = new HashMap<>();
-        CardDisplay[][] tileMap = new CardDisplay[10][10];
+        CardDisplay[][] tileMap = new CardDisplay[size][size];
         Queue<PointDir> coorToAdd = new ArrayDeque<>();
         addCardHardCoded();
         primeTheWhileLoop(coorToAdd, tileMap);
         counter = 1;
         lastCardAdded = new Point((tileMap[0].length / 2), (tileMap.length / 2));
 
-        while ((!isTileLimit || (isTileLimit && counter < tileLimit)) && !coorToAdd.isEmpty() && !usableCards.isEmpty()) {
+        while ((!isTileLimit || (counter < tileLimit)) && !coorToAdd.isEmpty() && !usableCards.isEmpty()) {
             PointDir thisPointDir = coorToAdd.remove();
-            Point coor = thisPointDir.coor;
-            char directionOfNewCard = thisPointDir.direction;
+            Point coor = thisPointDir.getCoor();
+            char directionOfNewCard = thisPointDir.getDirection();
 
             addCardToRoom(coor, coorToAdd, tileMap, directionOfNewCard);
         }
-        if (gameMode == 1 || gameMode == 3) {
-            display2dArray(tileMap);
-        }
 
-        if (gameMode == 2 || gameMode == 3) {
-            exploreMap(tileMap, consoleInput, lastCardAdded);
-        }
+        return tileMap;
     }
 
-    private static void exploreMap(CardDisplay[][] completeTileMap, Scanner consoleInput, Point bossRoom) {
-        Map<String, Point> nameToCoor = new HashMap<>();
-        Set<Point> discoveredPlaces = new HashSet<>();
-        Character[][] currentExploration = new Character[completeTileMap.length][completeTileMap[0].length];
-
-        addChanceEventsHardCoded();
-
-        Point startPos = new Point((currentExploration[0].length / 2), (currentExploration.length / 2));
-        discoveredPlaces.add(startPos);
-
-        nameToCoor.put(completeTileMap[startPos.y][startPos.x].getName(), startPos);
-        currentExploration[startPos.y][startPos.x] = 'D';
-        while (!discoveredPlaces.contains(bossRoom)) {
-            displayCurrentMapKnowledge(currentExploration, completeTileMap);
-            if (discoveredPlaces.size() > 1) {
-                displayNewRoomEvent(false);
-            }
-            int currentKnowledgeSize = discoveredPlaces.size();
-            while (currentKnowledgeSize == discoveredPlaces.size()) {
-                System.out.print("What is the name of the room from which you want to explore? ");
-                String roomName = consoleInput.next();
-                if (nameToCoor.containsKey(roomName)) {
-                    System.out.print("What global direction, relative to the previous room, is your new room (possible directions: u, d, l, r)? ");
-                    String relativePos = consoleInput.next();
-                    Point coor = nameToCoor.get(roomName);
-                    if (relativePos.equals("u")) {
-                        if (isBounded(completeTileMap, coor.x, coor.y - 1) && completeTileMap[coor.y - 1][coor.x] != null && !nameToCoor.containsKey(completeTileMap[coor.y - 1][coor.x].name)) {
-                            Point newRoom = new Point(coor.x,coor.y  - 1);
-                            currentExploration[newRoom.y][newRoom.x] = 'D';
-                            discoveredPlaces.add(newRoom);
-                            nameToCoor.put(completeTileMap[coor.y - 1][coor.x].getName(), newRoom);
-                        } else {
-                            System.out.println("Room cannot be added");
-                        }
-                    } else if (relativePos.equals("d")) {
-                        if (isBounded(completeTileMap, coor.x, coor.y + 1) && completeTileMap[coor.y + 1][coor.x] != null && !nameToCoor.containsKey(completeTileMap[coor.y + 1][coor.x].name)) {
-                            Point newRoom = new Point(coor.x,coor.y + 1);
-                            currentExploration[newRoom.y][newRoom.x] = 'D';
-                            discoveredPlaces.add(newRoom);
-                            nameToCoor.put(completeTileMap[coor.y + 1][coor.x].getName(), newRoom);
-                        } else {
-                            System.out.println("Room cannot be added");
-                        }
-                    } else if (relativePos.equals("l")) {
-                        if (isBounded(completeTileMap, coor.x - 1, coor.y) && completeTileMap[coor.y][coor.x - 1] != null && !nameToCoor.containsKey(completeTileMap[coor.y][coor.x - 1].name)) {
-                            Point newRoom = new Point(coor.x - 1,coor.y);
-                            currentExploration[newRoom.y][newRoom.x] = 'D';
-                            discoveredPlaces.add(newRoom);
-                            nameToCoor.put(completeTileMap[coor.y][coor.x - 1].getName(), newRoom);
-                        } else {
-                            System.out.println("Room cannot be added");
-                        }
-                    } else if (relativePos.equals("r")) {
-                        if (isBounded(completeTileMap, coor.x + 1, coor.y) && completeTileMap[coor.y][coor.x + 1] != null && !nameToCoor.containsKey(completeTileMap[coor.y][coor.x + 1].name)) {
-                            Point newRoom = new Point(coor.x + 1,coor.y);
-                            currentExploration[newRoom.y][newRoom.x] = 'D';
-                            discoveredPlaces.add(newRoom);
-                            nameToCoor.put(completeTileMap[coor.y][coor.x + 1].getName(), newRoom);
-                        } else {
-                            System.out.println("Room cannot be added");
-                        }
-                    } else {
-                        System.out.println("Error: An unacceptable input was provided");
-                        System.out.println();
-                    }
-                } else {
-                    System.out.println("Error: Room Name doesn't exist.");
-                    System.out.println();
-                }
-            }
-        }
-
-        displayCurrentMapKnowledge(currentExploration, completeTileMap);
-
-        System.out.println();
-        System.out.println();
-        displayNewRoomEvent(true);
-    }
-
+    /**
+     * A helper method that holds all the random events that can happen in each room
+     */
     private static void addChanceEventsHardCoded() {
         chanceEvents = new ArrayList<>();
         chanceEvents.add("All gold earned is doubled!");
@@ -149,6 +87,11 @@ public class Main {
         chanceEvents.add("You see a treasure chest disappearing. As you rush towards it, you chance is low. You must roll a 5 or 6 two times in a row. If so, earn 5 gold!");
         chanceEvents.add("When you kill a enemy, roll a dice. If a 6 is rolled, enemies additionally drop a random item from the item shop for free!");
     }
+
+    /**
+     * Displays all events in association to discovering a new room
+     * @param isBossRoom - holds whether the room entered is the boos room
+     */
     private static void displayNewRoomEvent(boolean isBossRoom) {
         if (isBossRoom) {
             System.out.println("Boss Room Discovered!!!!");
@@ -178,7 +121,10 @@ public class Main {
         }
     }
 
-    // returns a bell curve between zero and one
+    /**
+     * A helper method that returns a discrete gaussian distribution
+     * @return a double between the range of [0.0, 1.0)
+     */
     private static double bellCurve() {
         double sum = 0.0;
         Random r = new Random();
@@ -188,49 +134,8 @@ public class Main {
         return (sum / 10.0);
     }
 
-    private static void displayCurrentMapKnowledge(Character[][] currentMapKnowledge, CardDisplay[][] completeTileMap) {
-        for (int y = 0; y < currentMapKnowledge.length; y++) {
-            for (int x = 0; x < currentMapKnowledge[y].length; x++) {
-                if (currentMapKnowledge[y][x] != null && currentMapKnowledge[y][x] == 'D') {
-                    System.out.print(completeTileMap[y][x] + " ");
-                } else if (completeTileMap[y][x] != null && nextToDiscoveredRoom(x, y, currentMapKnowledge)) {
-                    System.out.print("[   ?   ]");
-                } else {
-                    System.out.print("         ");
-                }
-
-            }
-            System.out.println();
-        }
-        System.out.println();
-        System.out.println("====================");
-        System.out.println();
-    }
-
-    private static boolean nextToDiscoveredRoom(int x, int y, Character[][] currentMapKnowledge) {
-        if (isBounded(currentMapKnowledge, x + 1, y) && currentMapKnowledge[y][x + 1] != null && currentMapKnowledge[y][x + 1] == 'D') {
-            return true;
-        }
-
-        if (isBounded(currentMapKnowledge, x - 1, y) && currentMapKnowledge[y][x - 1] != null && currentMapKnowledge[y][x - 1] == 'D') {
-            return true;
-        }
-
-        if (isBounded(currentMapKnowledge, x, y + 1) && currentMapKnowledge[y + 1][x] != null && currentMapKnowledge[y + 1][x] == 'D') {
-            return true;
-        }
-
-        if (isBounded(currentMapKnowledge, x, y - 1) && currentMapKnowledge[y - 1][x] != null && currentMapKnowledge[y - 1][x] == 'D') {
-            return true;
-        }
-
-
-        return false;
-    }
-
-
     /**
-     * Adds Cards to global set
+     * A helper method that contains all the information for all the cards in the Deck Box Dungeon Set
      */
     private static void addCardHardCoded() {
 
@@ -275,24 +180,24 @@ public class Main {
         }
 
         for (int i = 0; i < usableCards.size(); i++) {
-            allCards.put(usableCards.get(i).getAlpha().name, usableCards.get(i));
+            allCards.put(usableCards.get(i).getAlpha().getName(), usableCards.get(i));
         }
     }
 
 
     /**
-     * Adds a card to the dungeon
-     * @param coor - What are the coordinates of the new room?
-     * @param coorToAdd - the stack of coordinates to add to (contains coordinate and direction of card)
-     * @param tileMap - the tile map
-     * @param directionOfHead - the direction of the new cards to be added 'u' 'd' 'l' or 'r'
+     * Adds a new card to the dungeon
+     * @param coor - the coordinates of the new room
+     * @param coorToAdd - the stack of coordinates to potentially add to the dungeon (contains coordinate and direction of card)
+     * @param tileMap - the tile map of the dungeon
+     * @param directionOfHead - the direction of the new cards to be added 'u' 'd' 'l' or 'r' for up, down, left, or right
      */
     private static void addCardToRoom(Point coor, Queue<PointDir> coorToAdd, CardDisplay[][] tileMap, char directionOfHead) {
         Card cardToAdd = isPlaceable(coor, tileMap, directionOfHead);
 
         if (cardToAdd != null) {
             counter++;
-            tileMap[coor.y][coor.x] = new CardDisplay(cardToAdd.name, directionOfHead, cardToAdd.getType());
+            tileMap[coor.y][coor.x] = new CardDisplay(cardToAdd.getName(), directionOfHead, cardToAdd.getType());
             lastCardAdded = coor;
             addCoorNeighborsToStack(coorToAdd, coor.x, coor.y, tileMap, cardToAdd.globalDirectionsGivenDirection(directionOfHead));//cardToAdd.direction);
         }
@@ -324,7 +229,7 @@ public class Main {
     }
 
     /**
-     * Prepares the while loop by adding the starting room, and any new entrances
+     * Prepares the while loop by adding the starting room, and any new entrances leading out of the room
      * @param coorToAdd - the coordinate stack of spots to fill
      * @param tileMap - the tile map
      */
@@ -339,17 +244,17 @@ public class Main {
             whichRoom = startCardDual.getBeta();
         }
 
-        tileMap[coor.y][coor.x] = new CardDisplay(whichRoom.name, 'u', whichRoom.getType());
-        addCoorNeighborsToStack(coorToAdd, coor.x, coor.y, tileMap, whichRoom.direction);
+        tileMap[coor.y][coor.x] = new CardDisplay(whichRoom.getName(), 'u', whichRoom.getType());
+        addCoorNeighborsToStack(coorToAdd, coor.x, coor.y, tileMap, whichRoom.globalDirectionsGivenDirection('u'));
     }
 
     /**
-     * Returns a Card with given rotation and direction that would be placeable at the given coordinates coor, if not
-     * possilbe then return null
-     * @param coor
-     * @param tileMap
-     * @param directionOfHead
-     * @return
+     * Returns a Card with given rotation and direction that can be place at the given coordinates coor given the current
+     * dungeon state, if no cards available meet the constraints (any pathways and adjacent cards), then return null
+     * @param coor - the coordinates of the new room
+     * @param tileMap - the tile map of the dungeon
+     * @param directionOfHead - the direction of the card to be place. This is in reference to the array on the card, with ^ meaning up
+     * @return a Card that can be placed at the given loaction
      */
     public static Card isPlaceable(Point coor, CardDisplay[][] tileMap, char directionOfHead) {
         if (Math.random() > (1 - oddsOfTileSpawn) && isBounded(tileMap, coor.x, coor.y) && tileMap[coor.y][coor.x] == null) {
@@ -398,11 +303,12 @@ public class Main {
     }
 
     /**
-     * returns a boolean that contain the cardinal direciton ['u', 'r' 'd' 'l'] stating whether there is a entrance
+     * returns a boolean that contain the cardinal direction ['u', 'r' 'd' 'l'] stating whether there is an entrance
      * on that side of the spot
-     * @param coor
-     * @param tileMap
-     * @return
+     * @param coor - the coordinates of the desired information
+     * @param tileMap - the tile map of the dungeon
+     * @return an array of length 4 that contain whether the assoicated direction has an entrance (the ordering is
+     *         [up, right, down, left]
      */
     private static boolean[] getAllNeighborsThatExist(Point coor, CardDisplay[][] tileMap) {
         boolean[] returnBooleanArray = new boolean[4];
@@ -410,55 +316,54 @@ public class Main {
         int y = coor.y;
 
         if (isBounded(tileMap, x, y + 1) && (tileMap[y + 1][x] != null)) {
-            DualCard neighborDualCard = allCards.get(tileMap[y+1][x].name);
+            DualCard neighborDualCard = allCards.get(tileMap[y+1][x].getPureName());
             Card neighborCard;
 
-            if (tileMap[y+1][x].type == 'A') {
+            if (tileMap[y+1][x].getType() == 'A') {
                 neighborCard = neighborDualCard.getAlpha();
             } else {
                 neighborCard = neighborDualCard.getBeta();
             }
 
-            //Card neighborCard = allCards.get(tileMap[y+1][x].name);
-            boolean[] globalValuesAfterReturn = neighborCard.globalDirectionsGivenDirection(tileMap[y+1][x].direction);
+            boolean[] globalValuesAfterReturn = neighborCard.globalDirectionsGivenDirection(tileMap[y+1][x].getDirection());
             returnBooleanArray[2] = globalValuesAfterReturn[0];
         }
         if (isBounded(tileMap, x, y - 1) && (tileMap[y - 1][x] != null)) {
-            DualCard neighborDualCard = allCards.get(tileMap[y-1][x].name);
+            DualCard neighborDualCard = allCards.get(tileMap[y-1][x].getPureName());
             Card neighborCard;
 
-            if (tileMap[y-1][x].type == 'A') {
+            if (tileMap[y-1][x].getType() == 'A') {
                 neighborCard = neighborDualCard.getAlpha();
             } else {
                 neighborCard = neighborDualCard.getBeta();
             }
 
-            boolean[] globalValuesAfterReturn = neighborCard.globalDirectionsGivenDirection(tileMap[y-1][x].direction);
+            boolean[] globalValuesAfterReturn = neighborCard.globalDirectionsGivenDirection(tileMap[y-1][x].getDirection());
             returnBooleanArray[0] = globalValuesAfterReturn[2];
         }
         if (isBounded(tileMap, x + 1, y) && (tileMap[y][x + 1] != null)) {
-            DualCard neighborDualCard = allCards.get(tileMap[y][x+1].name);
+            DualCard neighborDualCard = allCards.get(tileMap[y][x+1].getPureName());
             Card neighborCard;
 
-            if (tileMap[y][x+1].type == 'A') {
+            if (tileMap[y][x+1].getType() == 'A') {
                 neighborCard = neighborDualCard.getAlpha();
             } else {
                 neighborCard = neighborDualCard.getBeta();
             }
 
-            boolean[] globalValuesAfterReturn = neighborCard.globalDirectionsGivenDirection(tileMap[y][x+1].direction);
+            boolean[] globalValuesAfterReturn = neighborCard.globalDirectionsGivenDirection(tileMap[y][x+1].getDirection());
             returnBooleanArray[1] = globalValuesAfterReturn[3];
         }
         if (isBounded(tileMap, x - 1, y) && tileMap[y][x - 1] != null) {
-            DualCard neighborDualCard = allCards.get(tileMap[y][x-1].name);
+            DualCard neighborDualCard = allCards.get(tileMap[y][x-1].getPureName());
             Card neighborCard;
-            if (tileMap[y][x-1].type == 'A') {
+            if (tileMap[y][x-1].getType() == 'A') {
                 neighborCard = neighborDualCard.getAlpha();
             } else {
                 neighborCard = neighborDualCard.getBeta();
             }
 
-            boolean[] globalValuesAfterReturn = neighborCard.globalDirectionsGivenDirection(tileMap[y][x-1].direction);
+            boolean[] globalValuesAfterReturn = neighborCard.globalDirectionsGivenDirection(tileMap[y][x-1].getDirection());
             returnBooleanArray[3] = globalValuesAfterReturn[1];
         }
 
@@ -467,21 +372,28 @@ public class Main {
 
 
     /**
-     * returns a boolean stating whether a position is in bounds
+     * returns a boolean stating whether a coordinate is in bounds
      */
     private static boolean isBounded(CardDisplay[][] tileMap, int x, int y) {
         return y >= 0 && y < tileMap.length && x >= 0 && x < tileMap[0].length;
     }
 
+    /**
+     * returns a boolean stating whether a coordinate is in bounds
+     */
     private static boolean isBounded(Character[][] tileMap, int x, int y) {
         return y >= 0 && y < tileMap.length && x >= 0 && x < tileMap[0].length;
     }
 
     /**
-     *
-     * @param newDirOfCard
-     * @param direction
-     * @return
+     * Returns a boolean array of the pathways a card needs to have, starting from a relative rotaion of the
+     * head, to a global rotation (the card now facing up).
+     * To be used in conjunction when creating a list of cards that are able to be places in the dungeon with both
+     * adjacent neighbors and placing this potential card rotated.
+     * @param newDirOfCard - The current relative rotation of the potential card
+     * @param direction - An array of length 4 contain whether there are pathways in said direction, relative to the
+     *                    card in place (NOT globally)
+     * @return a boolean array of length 4 with the global rotation (upwards) of needed open pathways for the card
      */
     private static boolean[] globalDirectionsGivenDirectionInverse(char newDirOfCard, boolean[] direction) {
         boolean[] returnDirection = new boolean[]{direction[0], direction[1], direction[2], direction[3]};
@@ -503,6 +415,12 @@ public class Main {
         return returnDirection;
     }
 
+    /**
+     * takes the boolean array of pathways, and "rotates" the card to the left by 90 degrees.
+     * For example, a card with sole pathway leading upwards would now have this pathway leading left, as the card
+     * has now "rotated" 90 degrees to the left
+     * @param returnDirection the pathways that are open [up, right, down, left]
+     */
     private static void leftShift(boolean[] returnDirection) {
         boolean firstValue = returnDirection[0];
 
@@ -513,6 +431,12 @@ public class Main {
         returnDirection[returnDirection.length - 1] = firstValue;
     }
 
+    /**
+     * takes the boolean array of pathways, and "rotates" the card to the right by 90 degrees.
+     * For example, a card with sole pathway leading upwards would now have this pathway leading right, as the card
+     * has now "rotated" 90 degrees to the right
+     * @param returnDirection the pathways that are open [up, right, down, left]
+     */
     private static void rightShift(boolean[] returnDirection) {
         boolean lastValue = returnDirection[returnDirection.length - 1];
 
@@ -523,8 +447,17 @@ public class Main {
         returnDirection[0] = lastValue;
     }
 
-
-
+    /**
+     * Takes a given position on the tile dungeon map, and adds the positions adjacent to this spot to possibly add to
+     * the dungeon, assuming that there are no cards already in this spot
+     * @param coorToAdd - The stack of positions in which to add cards to generate the dungeon
+     * @param x         - the x coordinate of the center position to which all adjacent spots will be added to the stack of
+     *      *             coordinates for the dungeon
+     * @param y         - the y coordinate of the center position to which all adjacent spots will be added to the stack of
+     *      *             coordinates for the dungeon
+     * @param tileMap   - the tile map of the dungeon
+     * @param direction - the relative direction of pathways for the card at position x, y
+     */
     public static void addCoorNeighborsToStack(Queue<PointDir> coorToAdd, int x, int y, CardDisplay[][] tileMap, boolean[] direction) {
 
         if(Math.random() > (1 - oddsOfTileSpawn) && direction[1] && isBounded(tileMap, x + 1, y) && tileMap[y][x + 1] == null) {
@@ -541,5 +474,143 @@ public class Main {
         }
 
 
+    }
+
+    /**
+     * Takes a complete, generated tilemap, and lets the user explore the map, one room at a time from the starting position
+     * until the boss room is found, or the user has died
+     * @param completeTileMap - the generate map
+     * @param consoleInput - user input
+     * @param bossRoom - The coordinates of the boss room
+     */
+    private static void exploreMap(CardDisplay[][] completeTileMap, Scanner consoleInput, Point bossRoom) {
+        Map<String, Point> nameToCoor = new HashMap<>();
+        Set<Point> discoveredPlaces = new HashSet<>();
+        Character[][] currentExploration = new Character[completeTileMap.length][completeTileMap[0].length];
+
+        addChanceEventsHardCoded();
+
+        Point startPos = new Point((currentExploration[0].length / 2), (currentExploration.length / 2));
+        discoveredPlaces.add(startPos);
+
+        nameToCoor.put(completeTileMap[startPos.y][startPos.x].getName(), startPos);
+        currentExploration[startPos.y][startPos.x] = 'D';
+        while (!discoveredPlaces.contains(bossRoom)) {
+            displayCurrentMapKnowledge(currentExploration, completeTileMap);
+            if (discoveredPlaces.size() > 1) {
+                displayNewRoomEvent(false);
+            }
+            int currentKnowledgeSize = discoveredPlaces.size();
+            while (currentKnowledgeSize == discoveredPlaces.size()) {
+                System.out.print("What is the name of the room from which you want to explore? ");
+                String roomName = consoleInput.next();
+                if (nameToCoor.containsKey(roomName)) {
+                    System.out.print("What global direction, relative to the previous room, is your new room (possible directions: u, d, l, r)? ");
+                    String relativePos = consoleInput.next();
+                    Point coor = nameToCoor.get(roomName);
+                    if (relativePos.equals("u")) {
+                        if (isBounded(completeTileMap, coor.x, coor.y - 1) && completeTileMap[coor.y - 1][coor.x] != null && !nameToCoor.containsKey(completeTileMap[coor.y - 1][coor.x].getPureName())) {
+                            Point newRoom = new Point(coor.x,coor.y  - 1);
+                            currentExploration[newRoom.y][newRoom.x] = 'D';
+                            discoveredPlaces.add(newRoom);
+                            nameToCoor.put(completeTileMap[coor.y - 1][coor.x].getName(), newRoom);
+                        } else {
+                            System.out.println("Room cannot be added");
+                        }
+                    } else if (relativePos.equals("d")) {
+                        if (isBounded(completeTileMap, coor.x, coor.y + 1) && completeTileMap[coor.y + 1][coor.x] != null && !nameToCoor.containsKey(completeTileMap[coor.y + 1][coor.x].getPureName())) {
+                            Point newRoom = new Point(coor.x,coor.y + 1);
+                            currentExploration[newRoom.y][newRoom.x] = 'D';
+                            discoveredPlaces.add(newRoom);
+                            nameToCoor.put(completeTileMap[coor.y + 1][coor.x].getName(), newRoom);
+                        } else {
+                            System.out.println("Room cannot be added");
+                        }
+                    } else if (relativePos.equals("l")) {
+                        if (isBounded(completeTileMap, coor.x - 1, coor.y) && completeTileMap[coor.y][coor.x - 1] != null && !nameToCoor.containsKey(completeTileMap[coor.y][coor.x - 1].getPureName())) {
+                            Point newRoom = new Point(coor.x - 1,coor.y);
+                            currentExploration[newRoom.y][newRoom.x] = 'D';
+                            discoveredPlaces.add(newRoom);
+                            nameToCoor.put(completeTileMap[coor.y][coor.x - 1].getName(), newRoom);
+                        } else {
+                            System.out.println("Room cannot be added");
+                        }
+                    } else if (relativePos.equals("r")) {
+                        if (isBounded(completeTileMap, coor.x + 1, coor.y) && completeTileMap[coor.y][coor.x + 1] != null && !nameToCoor.containsKey(completeTileMap[coor.y][coor.x + 1].getPureName())) {
+                            Point newRoom = new Point(coor.x + 1,coor.y);
+                            currentExploration[newRoom.y][newRoom.x] = 'D';
+                            discoveredPlaces.add(newRoom);
+                            nameToCoor.put(completeTileMap[coor.y][coor.x + 1].getName(), newRoom);
+                        } else {
+                            System.out.println("Room cannot be added");
+                        }
+                    } else {
+                        System.out.println("Error: An unacceptable input was provided");
+                        System.out.println();
+                    }
+                } else {
+                    System.out.println("Error: Room Name doesn't exist.");
+                    System.out.println();
+                }
+            }
+        }
+
+        displayCurrentMapKnowledge(currentExploration, completeTileMap);
+
+        System.out.println();
+        System.out.println();
+        displayNewRoomEvent(true);
+    }
+
+    /**
+     * Displays the current explored map
+     * @param currentMapKnowledge - A 2d "tilemap" of relative places explored, and neighbor paths
+     * @param completeTileMap  - The complete tile map
+     */
+    private static void displayCurrentMapKnowledge(Character[][] currentMapKnowledge, CardDisplay[][] completeTileMap) {
+        for (int y = 0; y < currentMapKnowledge.length; y++) {
+            for (int x = 0; x < currentMapKnowledge[y].length; x++) {
+                if (currentMapKnowledge[y][x] != null && currentMapKnowledge[y][x] == 'D') {
+                    System.out.print(completeTileMap[y][x] + " ");
+                } else if (completeTileMap[y][x] != null && nextToDiscoveredRoom(x, y, currentMapKnowledge)) {
+                    System.out.print("[   ?   ]");
+                } else {
+                    System.out.print("         ");
+                }
+
+            }
+            System.out.println();
+        }
+        System.out.println();
+        System.out.println("====================");
+        System.out.println();
+    }
+
+    /**
+     * returns a boolean determining whether the user is next to a room that has been discovered
+     * @param x - the x position of the room to check
+     * @param y - the y position of the room to check
+     * @param currentMapKnowledge - current map of explored and adjacent tiles
+     * @return
+     */
+    private static boolean nextToDiscoveredRoom(int x, int y, Character[][] currentMapKnowledge) {
+        if (isBounded(currentMapKnowledge, x + 1, y) && currentMapKnowledge[y][x + 1] != null && currentMapKnowledge[y][x + 1] == 'D') {
+            return true;
+        }
+
+        if (isBounded(currentMapKnowledge, x - 1, y) && currentMapKnowledge[y][x - 1] != null && currentMapKnowledge[y][x - 1] == 'D') {
+            return true;
+        }
+
+        if (isBounded(currentMapKnowledge, x, y + 1) && currentMapKnowledge[y + 1][x] != null && currentMapKnowledge[y + 1][x] == 'D') {
+            return true;
+        }
+
+        if (isBounded(currentMapKnowledge, x, y - 1) && currentMapKnowledge[y - 1][x] != null && currentMapKnowledge[y - 1][x] == 'D') {
+            return true;
+        }
+
+
+        return false;
     }
 }
