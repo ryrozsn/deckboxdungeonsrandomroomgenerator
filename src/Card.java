@@ -1,9 +1,9 @@
 public class Card {
 
-    private String name;
-    private char type;
+    private final String name;
+    private final char type;
     // t r b l
-    private boolean[] direction;
+    private final boolean[] direction;
 
 
     public Card(String name, boolean up, boolean left, boolean right, char t) {
