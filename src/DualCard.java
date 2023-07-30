@@ -1,7 +1,7 @@
 public class DualCard {
 
-    private Card alpha;
-    private Card beta;
+    private final Card alpha;
+    private final Card beta;
 
     public DualCard(Card c1, Card c2) {
         alpha = c1;

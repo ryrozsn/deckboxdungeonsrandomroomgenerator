@@ -515,7 +515,7 @@ public class Main {
                             discoveredPlaces.add(newRoom);
                             nameToCoor.put(completeTileMap[coor.y - 1][coor.x].getName(), newRoom);
                         } else {
-                            System.out.println("Room cannot be added");
+                            System.out.println("Pathway cannot be explored");
                         }
                     } else if (relativePos.equals("d")) {
                         if (isBounded(completeTileMap, coor.x, coor.y + 1) && completeTileMap[coor.y + 1][coor.x] != null && !nameToCoor.containsKey(completeTileMap[coor.y + 1][coor.x].getPureName())) {
@@ -524,7 +524,7 @@ public class Main {
                             discoveredPlaces.add(newRoom);
                             nameToCoor.put(completeTileMap[coor.y + 1][coor.x].getName(), newRoom);
                         } else {
-                            System.out.println("Room cannot be added");
+                            System.out.println("Pathway cannot be explored");
                         }
                     } else if (relativePos.equals("l")) {
                         if (isBounded(completeTileMap, coor.x - 1, coor.y) && completeTileMap[coor.y][coor.x - 1] != null && !nameToCoor.containsKey(completeTileMap[coor.y][coor.x - 1].getPureName())) {
@@ -533,7 +533,7 @@ public class Main {
                             discoveredPlaces.add(newRoom);
                             nameToCoor.put(completeTileMap[coor.y][coor.x - 1].getName(), newRoom);
                         } else {
-                            System.out.println("Room cannot be added");
+                            System.out.println("Pathway cannot be explored");
                         }
                     } else if (relativePos.equals("r")) {
                         if (isBounded(completeTileMap, coor.x + 1, coor.y) && completeTileMap[coor.y][coor.x + 1] != null && !nameToCoor.containsKey(completeTileMap[coor.y][coor.x + 1].getPureName())) {
@@ -542,7 +542,7 @@ public class Main {
                             discoveredPlaces.add(newRoom);
                             nameToCoor.put(completeTileMap[coor.y][coor.x + 1].getName(), newRoom);
                         } else {
-                            System.out.println("Room cannot be added");
+                            System.out.println("Pathway cannot be explored");
                         }
                     } else {
                         System.out.println("Error: An unacceptable input was provided");
@@ -572,7 +572,7 @@ public class Main {
             for (int x = 0; x < currentMapKnowledge[y].length; x++) {
                 if (currentMapKnowledge[y][x] != null && currentMapKnowledge[y][x] == 'D') {
                     System.out.print(completeTileMap[y][x] + " ");
-                } else if (completeTileMap[y][x] != null && nextToDiscoveredRoom(x, y, currentMapKnowledge)) {
+                } else if (completeTileMap[y][x] != null && nextToDiscoveredRoom(x, y, currentMapKnowledge, completeTileMap)) {
                     System.out.print("[   ?   ]");
                 } else {
                     System.out.print("         ");
@@ -591,26 +591,61 @@ public class Main {
      * @param x - the x position of the room to check
      * @param y - the y position of the room to check
      * @param currentMapKnowledge - current map of explored and adjacent tiles
-     * @return
+     * @return true or false depending upon whether a neighbor room with a leading pathway exists
      */
-    private static boolean nextToDiscoveredRoom(int x, int y, Character[][] currentMapKnowledge) {
-        if (isBounded(currentMapKnowledge, x + 1, y) && currentMapKnowledge[y][x + 1] != null && currentMapKnowledge[y][x + 1] == 'D') {
+    private static boolean nextToDiscoveredRoom(int x, int y, Character[][] currentMapKnowledge, CardDisplay[][] completeTileMap) {
+        if (isBounded(currentMapKnowledge, x + 1, y) && currentMapKnowledge[y][x + 1] != null && currentMapKnowledge[y][x + 1] == 'D' && isPathwayAtPt(x + 1, y, completeTileMap, 'l')) {
             return true;
         }
 
-        if (isBounded(currentMapKnowledge, x - 1, y) && currentMapKnowledge[y][x - 1] != null && currentMapKnowledge[y][x - 1] == 'D') {
+        if (isBounded(currentMapKnowledge, x - 1, y) && currentMapKnowledge[y][x - 1] != null && currentMapKnowledge[y][x - 1] == 'D' && isPathwayAtPt(x - 1, y, completeTileMap, 'r')) {
             return true;
         }
 
-        if (isBounded(currentMapKnowledge, x, y + 1) && currentMapKnowledge[y + 1][x] != null && currentMapKnowledge[y + 1][x] == 'D') {
+        if (isBounded(currentMapKnowledge, x, y + 1) && currentMapKnowledge[y + 1][x] != null && currentMapKnowledge[y + 1][x] == 'D' && isPathwayAtPt(x, y + 1, completeTileMap, 'u')) {
             return true;
         }
 
-        if (isBounded(currentMapKnowledge, x, y - 1) && currentMapKnowledge[y - 1][x] != null && currentMapKnowledge[y - 1][x] == 'D') {
+        if (isBounded(currentMapKnowledge, x, y - 1) && currentMapKnowledge[y - 1][x] != null && currentMapKnowledge[y - 1][x] == 'D' && isPathwayAtPt(x, y - 1, completeTileMap, 'd')) {
             return true;
         }
 
 
         return false;
+    }
+
+    /**
+     * Takes a position on the grid map, and returns true or false whether there is a pathway going in
+     * a specific direction at the point.
+     * @param x - the x coordinate of the point
+     * @param y - the y coordinate of the point
+     * @param completeTileMap - the generated dungeon tile map
+     * @param globalDirectionPathway - the direction of the pathway to check
+     * @return a boolean stating whether this is true
+     */
+    private static boolean isPathwayAtPt(int x, int y, CardDisplay[][] completeTileMap, char globalDirectionPathway) {
+        DualCard dc = allCards.get(completeTileMap[y][x].getPureName());
+
+        if (dc == null) {
+            return false;
+        }
+
+        Card whichCardIsNeighbor;
+        if (completeTileMap[y][x].getType() == 'A') {
+            whichCardIsNeighbor = dc.getAlpha();
+        } else {
+            whichCardIsNeighbor = dc.getBeta();
+        }
+
+        boolean[] pathways = whichCardIsNeighbor.globalDirectionsGivenDirection(completeTileMap[y][x].getDirection());
+        if (globalDirectionPathway == 'u') {
+            return pathways[0];
+        } else if (globalDirectionPathway == 'r') {
+            return pathways[1];
+        } else if (globalDirectionPathway == 'd') {
+            return pathways[2];
+        } else {
+            return pathways[3];
+        }
     }
 }
